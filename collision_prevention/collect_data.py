@@ -1,6 +1,7 @@
 import airsim
 import collections
 import datetime
+import logging
 import math
 import os
 import os.path
@@ -9,91 +10,101 @@ import tempfile
 import time
 
 # configurable constants
-collision_number = 10
-frame_per_collision = 30
-frame_interval = 0.1
-flying_velocity = 10
-flying_height = 5
-flying_direction_variation = math.pi/16
+DATASET_DIRECTORY = r'C:\Users\JJ Wong\Documents\NCTU\seminar\dataset'
+COLLISION_NUMBER = 5
+FRAME_PER_COLLISION = 60
+FRAME_INTERVAL = 0.01
+GENERATE_RANGE = ((-200, 200), (-200, 200))
+FLYING_HEIGHT = 5
+FLYING_VELOCITY = 5
 
 
-def moveByDirectionZ(self, v, dir, **kwargs):
-    # TODO: turn camera to the front
-    self.moveByVelocityZAsync(
-        vx = v*math.sin(dir),
-        vy = v*math.cos(dir),
-        **kwargs
-    ).join()
 
 
-def capture_images(client):
-    direction = 0
-    collision_count = 0
-    image_queue = collections.deque(maxlen=frame_per_collision)
-    while collision_count < collision_number:
-        # randomly change the direction
-        direction += random.normalvariate(0, flying_direction_variation)
-        # move toward the duration
-        moveByDirectionZ(
-            self = client,
-            v = flying_velocity,
-            dir = direction,
-            z = -1*flying_height,
-            duration = frame_interval,
-        )
-        # gather images from the camera
-        image_queue.appendleft(
-            client.simGetImage('front_center', airsim.ImageType.Scene)
-        )
-        # check if a collision occured
-        collision_info = client.simGetCollisionInfo()
-        if collision_info.has_collided and len(image_queue) >= frame_per_collision:
-            occured_time = datetime.datetime.now()
-            print(
-                f'collision dataset #{collision_count+1} captured at {occured_time}'
-            )
-            # save the capturede images just before collision occured
-            folder_name = str(occured_time.strftime('%Y-%m-%d-%H-%M-%S'))
-            folder_path = os.path.join(image_dir, folder_name)
-            os.mkdir(folder_path)
-            for num in range(len(image_queue)):
-                image = image_queue.pop()
-                file_path = os.path.join(folder_path, str(num)+'.png')
-                airsim.write_file(file_path, image)
-            # turn back and move a bit
-            direction += math.pi + random.normalvariate(0, math.pi/4)
-            moveByDirectionZ(
-                self = client,
-                v = flying_velocity,
-                dir = direction,
-                z = -1*flying_height,
-                duration = frame_interval*5,
-            )
-            collision_count += 1
-
-    print(f'{collision_number} collision datasets are saved.')
+def setRandomVehiclePose(self):
+    # generate random position
+    position = [
+        random.uniform(r[0], r[1])
+        for r in GENERATE_RANGE
+    ] + [-FLYING_HEIGHT]
+    orientation = random.uniform(-math.pi, math.pi)
+    self.simSetVehiclePose(
+        airsim.Pose(
+            airsim.Vector3r(*position),
+            airsim.Quaternionr(0, 0, math.sin(orientation/2), math.cos(orientation/2))
+        ),
+        ignore_collison = True,
+    )
+    return orientation
 
 def main():
-    # create temporary directory
-    image_dir = os.path.join(
-        tempfile.gettempdir(),
-        'airsim_drone',
-        datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'),
-    )
-    os.makedirs(image_dir)
-    print (f'temporary image folder: {image_dir}')
     try:
+        # create dataset directory
+        dataset_path = os.path.join(
+            DATASET_DIRECTORY,
+            datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'),
+        )
+        if not os.path.exists(dataset_path):
+            os.makedirs(dataset_path)
         # connect to the AirSim simulator
         client = airsim.MultirotorClient()
         client.confirmConnection()
         client.enableApiControl(True)
         client.armDisarm(True)
-        capture_images(client)
+        client.takeoffAsync().join()
+        # start try to collide
+        collision_index = 0
+        while collision_index < COLLISION_NUMBER:
+            direction = setRandomVehiclePose(client)
+            while client.simGetCollisionInfo().has_collided:
+                direction = setRandomVehiclePose(client)
+            # move toward the direction
+            client.moveByVelocityZAsync(
+                vx = FLYING_VELOCITY*math.cos(direction),
+                vy = FLYING_VELOCITY*math.sin(direction),
+                z = -FLYING_HEIGHT,
+                drivetrain = airsim.DrivetrainType.ForwardOnly,
+                duration = 1000,
+            )
+            # initialize image queue
+            image_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
+            while True:
+                # gather images from the camera
+                image_queue.appendleft(
+                    client.simGetImage('front_center', airsim.ImageType.Scene)
+                )
+                # check if a collision occured
+                collision_info = client.simGetCollisionInfo()
+                if collision_info.has_collided:
+                    if len(image_queue) < FRAME_PER_COLLISION:
+                        print(
+                            f'not enough picture before this collision: '
+                            f'{len(image_queue)}'
+                        )
+                        break
+                    occured_time = datetime.datetime.now()
+                    # save the capturede images just before collision occured
+                    folder_name = str(occured_time.strftime('%Y-%m-%d-%H-%M-%S'))
+                    folder_path = os.path.join(dataset_path, folder_name)
+                    os.mkdir(folder_path)
+                    for num in range(len(image_queue)):
+                        image = image_queue.pop()
+                        file_path = os.path.join(
+                            folder_path,
+                            str(num).zfill(3)+'.png'
+                        )
+                        airsim.write_file(file_path, image)
+                    # finished this collision
+                    print(f'collision data #{collision_index+1} is saved')
+                    collision_index += 1
+                    break
+                # time.sleep(FRAME_INTERVAL)
+        print(f'{COLLISION_NUMBER} collision datas are saved.')
         print('Returning to origin state...')
         time.sleep(5)
         client.reset()
-    except Exception as e:
-        print(e)
+    except:
+        logging.exception('')
         client.reset()
 
 main()

@@ -1,2 +1,2 @@
-# Drone Seminar
-Seminar in controlling drones 
+# Drone
+Seminar in controlling multirotors
