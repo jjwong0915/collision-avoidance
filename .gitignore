@@ -1,3 +1,5 @@
+## Github Python Ignore
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -123,3 +125,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+## Custom Ignore
+
+# training data and result
+collision_prevention/depth_prediction/data/*
+collision_prevention/depth_prediction/result/*
+
+# keep folders
+!.gitkeep
+
