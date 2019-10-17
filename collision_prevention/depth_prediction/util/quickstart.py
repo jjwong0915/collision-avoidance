@@ -217,19 +217,15 @@ def getResult(model, image, shape):
         # 將深度圖進行normalization並inverse，以利顯示
         depth[i] *= 255. / depth_max
         depth[i] = 255 - depth[i]
-    # 讀入影像
-    image = cv2.resize(image, (INPUT_WIDTH, INPUT_HEIGHT))
-    # 顯示結果
-    #showResult([image,depth[0],segment[0], sample],figsize=(15,15))
     return depth, segment
 
 
-def saveResult(imgs, filename, figsize=(20, 15), axis_off=True):
+def saveResult(imgs, filename, figsize=None, axis_off=True):
     from matplotlib import pyplot as plt
     total_imgs = len(imgs)
-    plt.figure(figsize=figsize)
+    plt.figure(figsize=figsize, dpi=300)
     for i in range(total_imgs):
-        plt.subplot(total_imgs, 1, i + 1)
+        plt.subplot(math.ceil(total_imgs/2), 2, i + 1)
         plt.imshow(np.uint8(imgs[i]))
         if axis_off:
             plt.axis('off')
