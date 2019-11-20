@@ -35,8 +35,7 @@ def read_image(image_path, shape, rand=-1):
     else:
         img = image.load_img(image_path)
         img = image.img_to_array(img)
-        img = cv2.resize(img,
-                         (int(IMAGE_H * img.shape[1] / img.shape[0]), IMAGE_H))
+        img = cv2.resize(img, (int(IMAGE_H * img.shape[1] / img.shape[0]), IMAGE_H))
         begin = int((img.shape[1] - IMAGE_W) * rand)
         img = img[:, begin:begin + IMAGE_W]
     gamma = random.uniform(0.8, 1.2)
@@ -48,7 +47,7 @@ def read_image(image_path, shape, rand=-1):
 ### Result Visualization
 
 Label = namedtuple(
-    'Label',
+    'Label', 
     [
         'name',  # The identifier of this label, e.g. 'car', 'person', ... .
         # We use them to uniquely name a class
@@ -75,10 +74,11 @@ Label = namedtuple(
         'ignoreInEval',  # Whether pixels having this class as ground truth label are ignored
         # during evaluations or not
         'color',  # The color of this label
-    ])
+    ]
+)
 
 labels_19 = [
-    #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+    # Label(name, id, trainId, category, catId, hasInstances, ignoreInEval, color)
     Label('road', 7, 0, 'flat', 1, False, False, (128, 64, 128)),
     Label('sidewalk', 8, 1, 'flat', 1, False, False, (244, 35, 232)),
     Label('building', 11, 2, 'construction', 2, False, False, (70, 70, 70)),
@@ -102,7 +102,7 @@ labels_19 = [
 ]
 
 labels_6 = [
-    #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
+    # Label(name, id, trainId, category, catId, hasInstances, ignoreInEval, color)
     Label('road', 7, 0, 'flat', 1, False, False, (128, 64, 128)),
     Label('sky', 23, 10, 'sky', 5, False, False, (70, 130, 180)),
     Label('vegetation', 21, 8, 'nature', 4, False, False, (107, 142, 35)),
@@ -125,9 +125,25 @@ labels_6 = [
 ]
 
 LABEL_NAMES = np.asarray([
-    'road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'traffic light',
-    'traffic sign', 'vegetation', 'terrain', 'sky', 'person', 'rider', 'car',
-    'truck', 'bus', 'train', 'motorcycle', 'bicycle'
+    'road',
+    'sidewalk',
+    'building',
+    'wall',
+    'fence',
+    'pole',
+    'traffic light',
+    'traffic sign',
+    'vegetation',
+    'terrain',
+    'sky',
+    'person',
+    'rider',
+    'car',
+    'truck',
+    'bus',
+    'train',
+    'motorcycle',
+    'bicycle',
 ])
 
 
@@ -142,13 +158,10 @@ def plot_class_sample(seg_pred, segment_type=19):
     for i in range(20):
         if i in seg_pred_vis:
             curr_class.append(i)
-    img = np.zeros((int(len(curr_class) / 5) * 100 + 100, 5 * 500, 3),
-                   np.uint8)
+    img = np.zeros((int(len(curr_class) / 5) * 100 + 100, 5 * 500, 3), np.uint8)
     img.fill(255)
     counter = 0
     for i in curr_class:
-        #cv2.rectangle(img, (0, 100*counter), (100, 100*(counter+1)), labels[i].color, -1)
-        #cv2.putText(img, labels[i].name, (150, int(100*(counter+0.6))), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)
         cv2.rectangle(img, (400 * (counter % 5), 100 * int(counter / 5)),
                       (400 *
                        (counter % 5) + 100, 100 * int(counter / 5) + 100),
@@ -158,9 +171,7 @@ def plot_class_sample(seg_pred, segment_type=19):
                      (counter % 5) + 120, int(100 * (int(counter / 5) + 0.6))),
                     cv2.FONT_HERSHEY_DUPLEX, 1.4, (0, 0, 0), 2, cv2.LINE_AA)
         counter += 1
-    #showResult([img[:,:,:]],figsize=(20,3))
-    img = cv2.resize(img, (5 * 500 // 1,
-                           (int(len(curr_class) / 5) * 100 + 100) // 1))
+    img = cv2.resize(img, (5 * 500 // 1, (int(len(curr_class) / 5) * 100 + 100) // 1))
     return img
 
 
@@ -172,13 +183,11 @@ def decode_precition(seg_pred, segment_type=19):
     seg_argmax = np.argmax(seg_pred, axis=3)
     seg_argmax = np.expand_dims(np.squeeze(seg_argmax), axis=2)
     seg_argmax = np.concatenate((seg_argmax, seg_argmax, seg_argmax), axis=2)
-    #print(seg_argmax.shape)
     seg_vis = np.ones((seg_argmax.shape[0], seg_argmax.shape[1], 3))
     ones = np.ones((seg_argmax.shape[0], seg_argmax.shape[1], 3))
     for i in range(19):
         seg_vis = np.where(seg_argmax == [i, i, i],
                            np.array(labels[i].color) * ones, seg_vis)
-    #print(seg_vis.shape)
     return seg_vis
 
 
@@ -186,7 +195,7 @@ def getResult(model, image, shape):
     INPUT_HEIGHT, INPUT_WIDTH = shape
     # 設定預測深度圖的最小值、最大值
     depth_min, depth_max = 4, 100
-    # 建立深度圖和語意分割圖的 Variable，將用來承接 model 的預測結果
+    # 建立深度圖和語意分割圖的 variable ，將用來承接 model 的預測結果
     depth = [
         np.zeros((INPUT_HEIGHT // 2, INPUT_WIDTH // 2)),
         np.zeros((INPUT_HEIGHT // 4, INPUT_WIDTH // 4)),
@@ -199,7 +208,7 @@ def getResult(model, image, shape):
         np.zeros((INPUT_HEIGHT // 8, INPUT_WIDTH // 8)),
         np.zeros((INPUT_HEIGHT // 16, INPUT_WIDTH // 16))
     ]
-    # Model預測結果
+    # model預測結果
     results = model.predict(np.expand_dims(image, axis=0))
     sample = plot_class_sample(results[4])
     # 把每個 resolution 的預測結果，放入 variable: depth 和 segment 中，並進行一些後處理以便顯示
@@ -207,8 +216,8 @@ def getResult(model, image, shape):
         # 取得該 resolution 的 predicted depth map
         depth[i] = np.squeeze(results[i])
         # 取得該 resolution 的 predicted semantic segmentation
-        segment[i] = decode_precition(results[i + 4])
-        # 將預測深度圖以 depth_min, depth_max 進行 clipping，
+        segment[i] = decode_precition(results[i + 4], segment_type=6)
+        # 將預測深度圖以 depth_min, depth_max 進行 clipping
         depth[i][depth[i] > depth_max] = depth_max
         depth[i][depth[i] < depth_min] = depth_min
         # 進行log transform，以便顯示
@@ -221,11 +230,10 @@ def getResult(model, image, shape):
 
 
 def saveResult(imgs, filename, figsize=None, axis_off=True):
-    from matplotlib import pyplot as plt
     total_imgs = len(imgs)
     plt.figure(figsize=figsize, dpi=300)
     for i in range(total_imgs):
-        plt.subplot(math.ceil(total_imgs/2), 2, i + 1)
+        plt.subplot(math.ceil(total_imgs/2), 2, i+1)
         plt.imshow(np.uint8(imgs[i]))
         if axis_off:
             plt.axis('off')
