@@ -12,12 +12,12 @@ import time
 
 # configurable constants
 DATASET_DIRECTORY = r'C:\Users\JJ Wong\Documents\NCTU\seminar\data'
-COLLISION_NUMBER = 5
-FRAME_PER_COLLISION = 60
+COLLISION_NUMBER = 120
+FRAME_PER_COLLISION = 100
 GENERATE_RANGE = ((-200, 200), (-200, 200))
 FLYING_RANGE = ((-400, 400), (-400, 400))
 FLYING_HEIGHT = 5
-FLYING_VELOCITY = 5
+FLYING_VELOCITY = 1
 
 
 def setRandomVehiclePose(self):
@@ -51,6 +51,7 @@ def main():
         # connect to the AirSim simulator
         client = airsim.MultirotorClient()
         client.confirmConnection()
+        # start flying
         client.enableApiControl(True)
         client.armDisarm(True)
         client.takeoffAsync().join()
@@ -58,9 +59,16 @@ def main():
         collision_data = {}
         collision_index = 0
         while collision_index < COLLISION_NUMBER:
+            # initialize image queue
+            scene_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
+            segment_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
+            depthvis_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
+            # initialize flying position
             direction = setRandomVehiclePose(client)
             while client.simGetCollisionInfo().has_collided:
                 direction = setRandomVehiclePose(client)
+            # initialize flying deadline
+            deadline = datetime.datetime.now() + datetime.timedelta(minutes=1)
             # move toward the direction
             client.moveByVelocityZAsync(
                 vx=FLYING_VELOCITY * math.cos(direction),
@@ -69,10 +77,6 @@ def main():
                 drivetrain=airsim.DrivetrainType.ForwardOnly,
                 duration=1000,
             )
-            # initialize image queue
-            scene_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
-            segment_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
-            depthvis_queue = collections.deque(maxlen=FRAME_PER_COLLISION)
             while True:
                 # gather images from the camera
                 responses = client.simGetImages([
@@ -96,7 +100,6 @@ def main():
                 scene_queue.appendleft(responses[0].image_data_uint8)
                 segment_queue.appendleft(responses[1].image_data_uint8)
                 depthvis_queue.appendleft(airsim.get_pfm_array(responses[2]))
-                # TODO: check if flied too far
                 # check if a collision occured
                 collision_info = client.simGetCollisionInfo()
                 if collision_info.has_collided:
@@ -120,6 +123,11 @@ def main():
                         'object_name':
                         collision_info.object_name,
                     }
+                    with open(
+                            os.path.join(dataset_path, 'collision_data.json'),
+                            'w',
+                    ) as fd:
+                        json.dump(collision_data, fd)
                     # create image folders
                     scene_path = os.path.join(
                         dataset_path,
@@ -160,12 +168,9 @@ def main():
                     print(f'collision data #{collision_index+1} is saved')
                     collision_index += 1
                     break
-        # save collision data and exit
-        with open(
-                os.path.join(dataset_path, 'collision_data.json'),
-                'w',
-        ) as fd:
-            json.dump(collision_data, fd)
+                elif datetime.datetime.now() > deadline:
+                    print('overdue the deadline')
+                    break
         print(f'{COLLISION_NUMBER} collision datasets are saved.')
         print('Returning to origin state...')
         time.sleep(5)
