@@ -130,9 +130,8 @@ dmypy.json
 ## Custom Ignore
 
 # training data and result
-collision_prevention/depth_prediction/data/*
-collision_prevention/depth_prediction/result/*
+depth_prediction/data/*
+depth_prediction/result/*
 
 # keep folders
 !.gitkeep
-
