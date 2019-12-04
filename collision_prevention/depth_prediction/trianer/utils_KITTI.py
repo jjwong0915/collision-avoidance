@@ -582,7 +582,7 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
     BATCH_SIZE = batchSize
 
     with open('error_mean_var.pickle', 'rb') as file:
-        error_mean_var =pickle.load(file)
+        error_mean_var = pickle.load(file)
     for i in range(60,80):
         error_mean_var[i][0] = error_mean_var[60][0] 
     
