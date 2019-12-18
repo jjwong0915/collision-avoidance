@@ -618,6 +618,7 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                         subPath = depthPath.split(os.sep)
                         imgPath = airsim_image_folder + subPath[8]+'/image/'+ subPath[10][:-3]+'png'
                         img[j-i*BATCH_SIZE] = read_AirSim_image(imgPath,shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
+                        
                 elif 'KITTI' in dataList[j]:
                     subPath = depthPath.split(os.sep)
                     imgPath = kitti_image_folder + subPath[6][:10] +'/'+ subPath[6] + '/'+ subPath[9]+'/data/' + subPath[-1]    
@@ -632,7 +633,10 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                         image_path = depthPath.replace('gtCoarse_labelIds','leftImg8bit')
                         image_path = image_path.replace('gtCoarse','leftImg8bit')
                     img[j-i*BATCH_SIZE] = read_KITTI_image(image_path, shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
-
+                
+                elif 'depth_prediction' in depthPath:
+                    image_path = depthPath.replace('depthPlanner', 'image').replace('pfm', 'png')
+                    img[j-i*BATCH_SIZE] = read_AirSim_image(image_path, shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
                     
                 # load all the depth with different size
                 for size_iter in range(len(depth)):
@@ -680,6 +684,11 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                     elif 'CityScape' in dataList[j]:
                         depth[size_iter][j-i*BATCH_SIZE] = read_Cityscapes_depth(depthPath, shape=shape[size_iter])
                         seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_cityscapes(depthPath,shape[size_iter], CLASSES=CLASSES)                            
+                    elif 'depth_prediction' in depthPath:
+                        depth[size_iter][j-i*BATCH_SIZE] = read_AirSim_depth(depthPath, shape=shape[size_iter])
+                        seg_path = depthPath.replace('depthPlanner', 'seg').replace('pfm', 'png')
+                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path, shape=shape[size_iter], CLASSES=CLASSES)
+                        
                         
             yield img, depth+seg
             # except:

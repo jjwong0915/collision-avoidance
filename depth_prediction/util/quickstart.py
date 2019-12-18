@@ -234,7 +234,7 @@ def saveResult(imgs, filename, figsize=None, axis_off=True):
     plt.figure(figsize=figsize, dpi=300)
     for i in range(total_imgs):
         plt.subplot(math.ceil(total_imgs/2), 2, i+1)
-        plt.imshow(np.uint8(imgs[i]), vmax=254)
+        plt.imshow(np.uint8(imgs[i]))
         if axis_off:
             plt.axis('off')
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
