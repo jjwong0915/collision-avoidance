@@ -21,17 +21,17 @@ from keras.preprocessing import image
 DEPTH_H, DEPTH_W = 26, 26
 BATCH_SIZE = 12 #12
 
-kitti_image_folder = '../../dataset/KITTI/image/'
-kitti_depth_folder = '../../dataset/KITTI/depth_interpol/'
-airsim_image_folder = '../../dataset/AirSim/Train/'
-airsim_depth_folder = '../../dataset/AirSim/Train/'
-city_image_folder = '../../dataset/AirSim/CityEnviron/Train/'
-city_depth_folder = '../../dataset/AirSim/CityEnviron/Train/'
-escenter_image_folder = '../../dataset/NCTU/ES_building/Train/'
-escenter_depth_folder = '../../dataset/NCTU/ES_building/Train/'
-NYUv1_mat_data_path = '../../dataset/NYU_depth/nyu_depth_data_labeled.mat'
-NYUv2_mat_data_path = '../../dataset/NYU_depth/nyu_depth_v2_labeled.mat'
-NYUv2_raw_data_path = '../../dataset/NYU_depth/NYUv2_raw_data/'
+kitti_image_folder = '/home/mjchiu/Documents/darknet-depth/dataset/KITTI/image/'
+kitti_depth_folder = '/home/mjchiu/Documents/darknet-depth/dataset/KITTI/depth_interpol/'
+airsim_image_folder = '/home/mjchiu/Documents/darknet-depth/dataset/AirSim/Train/'
+airsim_depth_folder = '/home/mjchiu/Documents/darknet-depth/dataset/AirSim/Train/'
+city_image_folder = '/home/mjchiu/Documents/darknet-depth/dataset/AirSim/CityEnviron/Train/'
+city_depth_folder = '/home/mjchiu/Documents/darknet-depth/dataset/AirSim/CityEnviron/Train/'
+escenter_image_folder = '/home/mjchiu/Documents/darknet-depth/dataset/NCTU/ES_building/Train/'
+escenter_depth_folder = '/home/mjchiu/Documents/darknet-depth/dataset/NCTU/ES_building/Train/'
+NYUv1_mat_data_path = '/home/mjchiu/Documents/darknet-depth/dataset/NYU_depth/nyu_depth_data_labeled.mat'
+NYUv2_mat_data_path = '/home/mjchiu/Documents/darknet-depth/dataset/NYU_depth/nyu_depth_v2_labeled.mat'
+NYUv2_raw_data_path = '/home/mjchiu/Documents/darknet-depth/dataset/NYU_depth/NYUv2_raw_data/'
 
 
 # 以 list 的方式傳入要顯示的 images，用matplot顯示在螢幕上
@@ -498,16 +498,6 @@ def read_AirSim_depth(image_path, shape=(DEPTH_H, DEPTH_W)):
     depth_float = depth.astype(np.float)
     return np.expand_dims(depth_float,axis=2) 
 
-# 讀取 drone Dataset 中的深度圖 (.pfm)
-def read_drone_depth(image_path, shape=(DEPTH_H, DEPTH_W)):
-    DEPTH_H, DEPTH_W = shape
-    depth, _ = read_pfm(image_path)
-    depth[depth>100] = 100
-    depth = cv2.resize(depth, (DEPTH_W,DEPTH_H),interpolation=cv2.INTER_NEAREST)[::-1,:]
-    depth = np.flipud(depth)
-    depth_float = depth.astype(np.float)
-    return np.expand_dims(depth_float,axis=2) 
-
 # 讀取 AirSim Dataset 中的影像 (.png)
 def read_AirSim_image(image_path, shape):
     #image = cv2.imread(image_path)
@@ -592,7 +582,7 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
     BATCH_SIZE = batchSize
 
     with open('error_mean_var.pickle', 'rb') as file:
-        error_mean_var =pickle.load(file)
+        error_mean_var = pickle.load(file)
     for i in range(60,80):
         error_mean_var[i][0] = error_mean_var[60][0] 
     
@@ -619,14 +609,16 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                 if random_crop == True: 
                     rand_init = np.random.random()
                 
-                if 'AirSim' in dataList[j] or 'drone' in dataList[j]:
+                if 'AirSim' in dataList[j]:
                     if 'CityEnviron' in dataList[j]:
                         subPath = depthPath.split(os.sep)
                         imgPath = city_image_folder + subPath[6]+'/image/'+ subPath[8][:-3]+'png'
                         img[j-i*BATCH_SIZE] = read_AirSim_image(imgPath,shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
                     else:
-                        imgPath = depthPath.replace('depthPlanner', 'image').replace('pfm', 'png')
+                        subPath = depthPath.split(os.sep)
+                        imgPath = airsim_image_folder + subPath[8]+'/image/'+ subPath[10][:-3]+'png'
                         img[j-i*BATCH_SIZE] = read_AirSim_image(imgPath,shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
+                        
                 elif 'KITTI' in dataList[j]:
                     subPath = depthPath.split(os.sep)
                     imgPath = kitti_image_folder + subPath[6][:10] +'/'+ subPath[6] + '/'+ subPath[9]+'/data/' + subPath[-1]    
@@ -641,7 +633,10 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                         image_path = depthPath.replace('gtCoarse_labelIds','leftImg8bit')
                         image_path = image_path.replace('gtCoarse','leftImg8bit')
                     img[j-i*BATCH_SIZE] = read_KITTI_image(image_path, shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
-
+                
+                elif 'depth_prediction' in depthPath:
+                    image_path = depthPath.replace('depthPlanner', 'image').replace('pfm', 'png')
+                    img[j-i*BATCH_SIZE] = read_AirSim_image(image_path, shape=(int(shape[0][0]*2),int(shape[0][1]*2)))
                     
                 # load all the depth with different size
                 for size_iter in range(len(depth)):
@@ -688,11 +683,12 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                             depth[size_iter][j-i*BATCH_SIZE] = read_KITTI_interpol_depth(depthPath, shape=shape[size_iter], rand=rand_init)
                     elif 'CityScape' in dataList[j]:
                         depth[size_iter][j-i*BATCH_SIZE] = read_Cityscapes_depth(depthPath, shape=shape[size_iter])
-                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_cityscapes(depthPath,shape[size_iter], CLASSES=CLASSES)                     
-                    elif 'drone' in dataList[j]:
-                        depth[size_iter][j-i*BATCH_SIZE] = read_drone_depth(depthPath, shape=shape[size_iter])
-                        seg_path = depthPath.replace('pfm','png').replace('depthPlanner','seg')
-                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path,shape[size_iter], CLASSES=CLASSES)
+                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_cityscapes(depthPath,shape[size_iter], CLASSES=CLASSES)                            
+                    elif 'depth_prediction' in depthPath:
+                        depth[size_iter][j-i*BATCH_SIZE] = read_AirSim_depth(depthPath, shape=shape[size_iter])
+                        seg_path = depthPath.replace('depthPlanner', 'seg').replace('pfm', 'png')
+                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path, shape=shape[size_iter], CLASSES=CLASSES)
+                        
                         
             yield img, depth+seg
             # except:
