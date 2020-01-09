@@ -12,13 +12,13 @@ from random import shuffle
 from enum import Enum
 
 from keras.models import Sequential, Model, load_model
-from keras.layers import Reshape, Activation, Conv2D, Input, MaxPooling2D, BatchNormalization, Flatten, Dense, Lambda, UpSampling2D
+from keras.layers import Reshape, Activation, Conv2D, Dropout, Input, MaxPooling2D, BatchNormalization, Flatten, Dense, Lambda, UpSampling2D
 from keras.layers import LeakyReLU, ZeroPadding2D, Add, merge, DepthwiseConv2D
 from keras.layers.merge import add, concatenate
 from keras.layers.advanced_activations import LeakyReLU
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.optimizers import SGD, Adam, RMSprop
-from keras.applications.mobilenetv2 import MobileNetV2
+from keras.applications.mobilenet_v2 import MobileNetV2
 from keras import regularizers, initializers
 
 def relu6(x):
@@ -114,7 +114,15 @@ def SubpixelConv2D(input_shape, scale=4, name='subpixel'):
 def MNv2_segment_depth_multiloss_model(inputShape=(416,416,3), alpha=1.0, expansion_factor=6, depth_multiplier=1, lock_backend_weights = True, CLASSES = 19):
     
     img_in_1x = Input(shape=inputShape)
-    mobilenetv2=MobileNetV2(input_shape=None, alpha=alpha, depth_multiplier=depth_multiplier, include_top=False, weights='imagenet', input_tensor=img_in_1x)
+    
+    mobilenetv2 = MobileNetV2(
+        input_shape=None, 
+        alpha=alpha, 
+        #depth_multiplier=depth_multiplier, 
+        include_top=False, 
+        weights='imagenet', 
+        input_tensor=img_in_1x
+    )
     model_backend = Model(inputs=mobilenetv2.input,outputs=[mobilenetv2.get_layer('block_16_project_BN').output, #(13,13,320)
                                                             mobilenetv2.get_layer('block_9_add').output, #(26,26,64)
                                                             mobilenetv2.get_layer('block_5_add').output, #(52,52,32)
@@ -198,9 +206,20 @@ def MNv2_segment_depth_multiloss_model(inputShape=(416,416,3), alpha=1.0, expans
     seg_pred_2x = Activation('softmax')(seg_pred_2x)
 
     
+    # generate risk index
+    risk_index = Conv2D(filters=4, kernel_size=3, activation='relu')(depth_pred_2x)
+    risk_index = MaxPooling2D()(risk_index)
+    risk_index = Conv2D(filters=8, kernel_size=3, activation='relu')(risk_index)
+    risk_index = MaxPooling2D()(risk_index)
+    risk_index = Conv2D(filters=16, kernel_size=3, activation='relu')(risk_index)
+    risk_index = MaxPooling2D()(risk_index)
+    risk_index = Flatten()(risk_index)
+    risk_index = Dense(units=32, activation='relu')(risk_index)
+    risk_index = Dense(units=2, activation='softmax')(risk_index)
 
 
-    model = Model(img_in_1x, [depth_pred_2x, depth_pred_4x, depth_pred_8x, depth_pred_16x,seg_pred_2x,seg_pred_4x,seg_pred_8x,seg_pred_16x])
+    # create model with input and output
+    model = Model(img_in_1x, [depth_pred_2x, depth_pred_4x, depth_pred_8x, depth_pred_16x,seg_pred_2x,seg_pred_4x,seg_pred_8x,seg_pred_16x, risk_index])
 
 
     # initialize weighting for decoder layers

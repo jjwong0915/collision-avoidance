@@ -5,7 +5,14 @@ name = "pypi"
 
 [packages]
 jupyter = "*"
-tensorflow = "==1.13.2"
+opencv-python = "*"
+pillow = "*"
+matplotlib = "*"
+keras = "*"
+imgaug = "*"
+tqdm = "*"
+keras-applications = "*"
+tensorflow-gpu = "==1.13.2"
 
 [dev-packages]
 

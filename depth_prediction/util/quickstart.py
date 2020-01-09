@@ -209,14 +209,15 @@ def getResult(model, image, shape):
         np.zeros((INPUT_HEIGHT // 16, INPUT_WIDTH // 16))
     ]
     # model預測結果
-    results = model.predict(np.expand_dims(image, axis=0))
-    sample = plot_class_sample(results[4])
+    result = model.predict(np.expand_dims(image, axis=0))
+    result_image = result[:8]
+    result_risk_index = result[8]
     # 把每個 resolution 的預測結果，放入 variable: depth 和 segment 中，並進行一些後處理以便顯示
     for i in range(4):
         # 取得該 resolution 的 predicted depth map
-        depth[i] = np.squeeze(results[i])
+        depth[i] = np.squeeze(result_image[i])
         # 取得該 resolution 的 predicted semantic segmentation
-        segment[i] = decode_precition(results[i + 4], segment_type=19)
+        segment[i] = decode_precition(result_image[i + 4], segment_type=19)
         # 將預測深度圖以 depth_min, depth_max 進行 clipping
         depth[i][depth[i] > depth_max] = depth_max
         depth[i][depth[i] < depth_min] = depth_min
@@ -226,12 +227,11 @@ def getResult(model, image, shape):
         # 將深度圖進行normalization並inverse，以利顯示
         depth[i] *= 255. / depth_max
         depth[i] = 255 - depth[i]
-    return depth, segment
+    return depth, segment, result_risk_index
 
 
-def saveResult(imgs, filename, figsize=None, axis_off=True):
+def saveResult(imgs, filename, risk_index, figsize=None, axis_off=True):
     total_imgs = len(imgs)
-    plt.figure(figsize=figsize, dpi=300)
     for i in range(total_imgs):
         plt.subplot(math.ceil(total_imgs/2), 2, i+1)
         plt.imshow(np.uint8(imgs[i]))

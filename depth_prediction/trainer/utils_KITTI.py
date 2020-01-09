@@ -529,17 +529,18 @@ def load_seg_data_airsim(seg_path,shape, CLASSES=19):
     ones = np.ones(seg_map[:,:,0].shape)
     seg_one_hot = np.zeros((seg_map.shape[0],seg_map.shape[1],CLASSES))
 
-                    
     color_class = [142,249,232,65,187,175,112,88,156,234,211,184,81,105,99,169,3,183,69]
     class_mapping = [1,2,3,6,4,3,5,4,3,3,6,8,7,6,3,6,6,6,6]
     
-    # for i in range (CLASSES):
-    #     seg_one_hot[:,:,i] = np.where(seg_map[:,:,0]==color_class[i],ones,seg_one_hot[:,:,i])
-
     for i in range (CLASSES):
-        seg_one_hot[:,:,class_mapping[i]-1] = np.where(seg_map[:,:,0]==color_class[i],ones,seg_one_hot[:,:,class_mapping[i]-1])
+        seg_one_hot[:,:,class_mapping[i]-1] = np.where(
+            seg_map[:,:,0]==color_class[i], 
+            ones, 
+            seg_one_hot[:,:,class_mapping[i]-1]
+        )
 
     return seg_one_hot
+
 
 # 讀取 KITTI Dataset 中的語意分割圖
 def load_seg_data(seg_path,shape, CLASSES=19, rand=-1):
@@ -580,15 +581,17 @@ def load_seg_data(seg_path,shape, CLASSES=19, rand=-1):
 #       (bool) log_depth: 是否要對depth map進行log transform
 #       (bool) train_airsim_with_deeplabv3：若是在AirSim Dataset訓練，設為True會使用deeplabv3的segmentation作training，設為false會使用AirSim本身的ground truth做training
 # - Output：每個training batch的input image和training ground truth
-def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W)], 
-                                    batchSize = BATCH_SIZE, 
-                                    include_sky = False, 
-                                    mixGroundTruth = False,
-                                    depth_crrection = False, 
-                                    CLASSES = 19, 
-                                    random_crop=False, 
-                                    log_depth = True, 
-                                    train_airsim_with_deeplabv3 = False): 
+def UltraHybridGenerator_multiloss(dataList, 
+                                   shape = [(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W),(DEPTH_H, DEPTH_W)], 
+                                   batchSize = BATCH_SIZE, 
+                                   include_sky = False, 
+                                   mixGroundTruth = False,
+                                   depth_crrection = False, 
+                                   CLASSES = 19, 
+                                   random_crop=False, 
+                                   log_depth = True, 
+                                   train_airsim_with_deeplabv3 = False):
+    
     BATCH_SIZE = batchSize
 
     with open('error_mean_var.pickle', 'rb') as file:
@@ -603,22 +606,19 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                      np.zeros((BATCH_SIZE,shape[1][0],shape[1][1],1)),
                      np.zeros((BATCH_SIZE,shape[2][0],shape[2][1],1)),
                      np.zeros((BATCH_SIZE,shape[3][0],shape[3][1],1))]
-
             seg = [np.zeros((BATCH_SIZE,shape[0][0],shape[0][1],CLASSES)),
-                     np.zeros((BATCH_SIZE,shape[1][0],shape[1][1],CLASSES)),
-                     np.zeros((BATCH_SIZE,shape[2][0],shape[2][1],CLASSES)),
-                     np.zeros((BATCH_SIZE,shape[3][0],shape[3][1],CLASSES))]
+                   np.zeros((BATCH_SIZE,shape[1][0],shape[1][1],CLASSES)),
+                   np.zeros((BATCH_SIZE,shape[2][0],shape[2][1],CLASSES)),
+                   np.zeros((BATCH_SIZE,shape[3][0],shape[3][1],CLASSES))]
+            risk = np.zeros((BATCH_SIZE, 2))
 
-            #try:
+            
             # Read Images and Depth for a batch
             for j in range(i*BATCH_SIZE,(i+1)*BATCH_SIZE):
-                
                 depthPath = dataList[j]
-                
                 rand_init = -1  
                 if random_crop == True: 
                     rand_init = np.random.random()
-                
                 if 'AirSim' in dataList[j] or 'drone' in dataList[j]:
                     if 'CityEnviron' in dataList[j]:
                         subPath = depthPath.split(os.sep)
@@ -632,7 +632,6 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                     imgPath = kitti_image_folder + subPath[6][:10] +'/'+ subPath[6] + '/'+ subPath[9]+'/data/' + subPath[-1]    
                     imgPath = imgPath.replace('pickle','png')
                     img[j-i*BATCH_SIZE] = read_KITTI_image(imgPath, shape=(int(shape[0][0]*2),int(shape[0][1]*2)), rand=rand_init)
-
                 elif 'CityScape' in dataList[j]:
                     if 'gtFine' in depthPath:
                         image_path = depthPath.replace('gtFine_labelIds','leftImg8bit')
@@ -650,53 +649,49 @@ def UltraHybridGenerator_multiloss(dataList, shape = [(DEPTH_H, DEPTH_W),(DEPTH_
                             depth[size_iter][j-i*BATCH_SIZE] = read_AirSim_depth(depthPath, shape=shape[size_iter])
                         else:
                             depth[size_iter][j-i*BATCH_SIZE] = read_AirSim_depth(depthPath, shape=shape[size_iter])
-                        
                         if not train_airsim_with_deeplabv3:
                             # Read segmentation map & one-hot-coding
                             seg_path = depthPath.replace('pfm','png')
                             seg_path = seg_path.replace('depthPlanner','seg')
-                            seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path,shape[size_iter], CLASSES=CLASSES)
+                            seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path, shape[size_iter], CLASSES=CLASSES)
                         elif train_airsim_with_deeplabv3:
                             seg_path = depthPath.replace('pfm','png')
                             seg_path = seg_path.replace('depthPlanner','seg_deeplabV3')
                             seg[size_iter][j-i*BATCH_SIZE] = load_seg_data(seg_path,shape[size_iter])
-
-
                     elif 'KITTI' in dataList[j]:
                         if 'depth_SPNet' in dataList[j]:
                             if mixGroundTruth:
                                 depth_PSMNet = read_KITTI_PSMNet_depth(depthPath, error_mean_var, shape=shape[size_iter], rand=rand_init,include_sky = include_sky, depth_crrection = depth_crrection, log_depth = True)
-                                
                                 depthPath_interpol = depthPath
                                 depthPath_interpol = depthPath_interpol.replace('depth_SPNet','depth')
                                 depthPath_interpol = depthPath_interpol.replace('pickle','png')
                                 depth_gt = depth_read_KITTI(depthPath_interpol, shape=shape[size_iter], rand=rand_init)
                                 depth_gt = np.expand_dims(depth_gt, 2)
-                                
                                 depth_gt = np.where(depth_gt<0,depth_PSMNet,depth_gt)
                                 depth[size_iter][j-i*BATCH_SIZE] = depth_gt
                             else:
                                 depth[size_iter][j-i*BATCH_SIZE] = read_KITTI_PSMNet_depth(depthPath, error_mean_var, shape=shape[size_iter], rand=rand_init,include_sky = include_sky, depth_crrection = depth_crrection, log_depth = True)
-
-
                             # Read segmentation map & one-hot-coding
                             seg_path = depthPath.replace('pickle','png')
                             seg_path = seg_path.replace('depth_SPNet','segment_deeplabV3')
-                            seg[size_iter][j-i*BATCH_SIZE] = load_seg_data(seg_path,shape[size_iter], CLASSES=CLASSES, rand = rand_init)
-
+                            seg[size_iter][j-i*BATCH_SIZE] = load_seg_data(seg_path,shape[size_iter], CLASSES=CLASSES, rand=rand_init)
                         else:
                             depth[size_iter][j-i*BATCH_SIZE] = read_KITTI_interpol_depth(depthPath, shape=shape[size_iter], rand=rand_init)
                     elif 'CityScape' in dataList[j]:
                         depth[size_iter][j-i*BATCH_SIZE] = read_Cityscapes_depth(depthPath, shape=shape[size_iter])
-                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_cityscapes(depthPath,shape[size_iter], CLASSES=CLASSES)                     
+                    # collision prevention data
                     elif 'drone' in dataList[j]:
                         depth[size_iter][j-i*BATCH_SIZE] = read_drone_depth(depthPath, shape=shape[size_iter])
                         seg_path = depthPath.replace('pfm','png').replace('depthPlanner','seg')
-                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path,shape[size_iter], CLASSES=CLASSES)
-                        
-            yield img, depth+seg
-            # except:
-            #     print('Exception occured.')
+                        seg[size_iter][j-i*BATCH_SIZE] = load_seg_data_airsim(seg_path, shape[size_iter], CLASSES=CLASSES)
+                
+                
+                # generate risk index
+                danger = int(depthPath.replace('.', '/').split('/')[-2]) > 45
+                risk[j-i*BATCH_SIZE][0] = 1 if danger else 0
+                risk[j-i*BATCH_SIZE][1] = 0 if danger else 1
+            
+            yield img, depth+seg+[risk]
 
 # --------------------------------------------------------------------------------
 # Variables and Functions for Semantic Segmentation ------------------------------
