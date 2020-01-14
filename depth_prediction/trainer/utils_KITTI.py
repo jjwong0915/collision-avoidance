@@ -687,7 +687,7 @@ def UltraHybridGenerator_multiloss(dataList,
                 
                 
                 # generate risk index
-                danger = int(depthPath.replace('.', '/').split('/')[-2]) > 45
+                danger = int(depthPath.replace('.', '/').split('/')[-2]) > 40
                 risk[j-i*BATCH_SIZE][0] = 1 if danger else 0
                 risk[j-i*BATCH_SIZE][1] = 0 if danger else 1
             

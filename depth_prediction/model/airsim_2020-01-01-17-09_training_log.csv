@@ -1,2 +1,0 @@
-epoch,activation_1_loss,activation_2_loss,activation_3_loss,activation_4_loss,activation_9_loss,depth_pw_1_loss,depth_pw_2_loss,depth_pw_3_loss,depth_pw_4_loss,loss
-0,0.0019875816,0.0014001406,0.0032215205,0.00223817,0.10068832,11.88323,10.910872,10.513126,10.848568,12.052473123073577

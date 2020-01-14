@@ -230,13 +230,25 @@ def getResult(model, image, shape):
     return depth, segment, result_risk_index
 
 
-def saveResult(imgs, filename, risk_index, figsize=None, axis_off=True):
+def saveResult(imgs, risk_index, filename, figsize=None, axis_off=True):
     total_imgs = len(imgs)
     for i in range(total_imgs):
-        plt.subplot(math.ceil(total_imgs/2), 2, i+1)
+        plt.subplot(math.ceil((total_imgs+1)/2), 2, i+1)
         plt.imshow(np.uint8(imgs[i]))
         if axis_off:
             plt.axis('off')
+    #
+    plt.subplot(math.ceil((total_imgs+1)/2), 2, total_imgs+1)
+    plt.text(
+        x = 0.5,
+        y = 0.5,
+        s = 'Risk Index: {}'.format(risk_index[0][0]),
+        fontsize = 10, 
+        horizontalalignment = 'center', 
+        verticalalignment = 'center',
+    )
+    plt.axis('off')
+    #
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
     plt.savefig(filename)
     plt.close()

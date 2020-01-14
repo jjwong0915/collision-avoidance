@@ -207,14 +207,20 @@ def MNv2_segment_depth_multiloss_model(inputShape=(416,416,3), alpha=1.0, expans
 
     
     # generate risk index
-    risk_index = Conv2D(filters=4, kernel_size=3, activation='relu')(depth_pred_2x)
-    risk_index = MaxPooling2D()(risk_index)
-    risk_index = Conv2D(filters=8, kernel_size=3, activation='relu')(risk_index)
-    risk_index = MaxPooling2D()(risk_index)
-    risk_index = Conv2D(filters=16, kernel_size=3, activation='relu')(risk_index)
-    risk_index = MaxPooling2D()(risk_index)
+    #risk_index = Conv2D(filters=4, kernel_size=3, activation='relu')(depth_pred_2x)
+    #risk_index = MaxPooling2D()(risk_index)
+    #risk_index = Conv2D(filters=8, kernel_size=3, activation='relu')(risk_index)
+    #risk_index = MaxPooling2D()(risk_index)
+    #risk_index = Conv2D(filters=16, kernel_size=3, activation='relu')(risk_index)
+    #risk_index = MaxPooling2D()(risk_index)
+    
+    def noramlized_depth(x):
+        x = K.clip(x, 0, 100)
+        x = x / 100.0
+        return x
+    risk_index = Lambda(noramlized_depth)(depth_pred_2x)
     risk_index = Flatten()(risk_index)
-    risk_index = Dense(units=32, activation='relu')(risk_index)
+    risk_index = Dense(units=4, activation='relu')(risk_index)
     risk_index = Dense(units=2, activation='softmax')(risk_index)
 
 
