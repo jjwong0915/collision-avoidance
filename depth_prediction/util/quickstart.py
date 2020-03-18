@@ -208,6 +208,12 @@ def getResult(model, image, shape):
         np.zeros((INPUT_HEIGHT // 8, INPUT_WIDTH // 8)),
         np.zeros((INPUT_HEIGHT // 16, INPUT_WIDTH // 16))
     ]
+    depth_pfm = [
+        np.zeros((INPUT_HEIGHT // 2, INPUT_WIDTH // 2)),
+        np.zeros((INPUT_HEIGHT // 4, INPUT_WIDTH // 4)),
+        np.zeros((INPUT_HEIGHT // 8, INPUT_WIDTH // 8)),
+        np.zeros((INPUT_HEIGHT // 16, INPUT_WIDTH // 16))
+    ]
     # model預測結果
     result = model.predict(np.expand_dims(image, axis=0))
     result_image = result[:8]
@@ -216,6 +222,8 @@ def getResult(model, image, shape):
     for i in range(4):
         # 取得該 resolution 的 predicted depth map
         depth[i] = np.squeeze(result_image[i])
+        # 取得沒有被轉換過的深度
+        depth_pfm[i] = depth[i]
         # 取得該 resolution 的 predicted semantic segmentation
         segment[i] = decode_precition(result_image[i + 4], segment_type=19)
         # 將預測深度圖以 depth_min, depth_max 進行 clipping
@@ -227,7 +235,7 @@ def getResult(model, image, shape):
         # 將深度圖進行normalization並inverse，以利顯示
         depth[i] *= 255. / depth_max
         depth[i] = 255 - depth[i]
-    return depth, segment, result_risk_index
+    return depth, segment, result_risk_index, depth_pfm
 
 
 def saveResult(imgs, risk_index, filename, figsize=None, axis_off=True):
