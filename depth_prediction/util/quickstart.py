@@ -232,6 +232,8 @@ def getResult(model, image, shape):
         # 進行log transform，以便顯示
         depth[i] = (np.log2(depth[i]) - np.log2(depth_min)) * depth_max / (
             np.log2(depth_max) - np.log2(depth_min))
+        # 取得沒有被轉換過的深度
+        depth_pfm[i] = depth[i]
         # 將深度圖進行normalization並inverse，以利顯示
         depth[i] *= 255. / depth_max
         depth[i] = 255 - depth[i]
@@ -260,3 +262,5 @@ def saveResult(imgs, risk_index, filename, figsize=None, axis_off=True):
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
     plt.savefig(filename)
     plt.close()
+    
+    plt.imsave(filename.replace('trypfm', 'grey'), imgs[2], cmap = plt.cm.gray)

@@ -13,6 +13,7 @@ imgaug = "*"
 tqdm = "*"
 keras-applications = "*"
 tensorflow-gpu = "==1.13.2"
+airsim = "*"
 
 [dev-packages]
 
