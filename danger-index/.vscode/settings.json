@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/home/jjwong0915/Documents/drone/danger-index/.venv/bin/python3.7",
+    "python.formatting.provider": "black"
+}
