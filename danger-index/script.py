@@ -1,11 +1,12 @@
+import os
 import airsim
 import pathlib
 import numpy as np
 import PIL.Image as Image
 
-DEPTH_MAX = 100
-DEPTH_MIN = 1  # should greater than or equal to 1
-WIDTH, HEIGHT = 192, 160
+DEPTH_MAX = int(os.getenv("DEPTH_MAX"))
+DEPTH_MIN = int(os.getenv("DEPTH_MIN"))
+WIDTH, HEIGHT = int(os.getenv("INPUT_WIDTH")), int(os.getenv("INPUT_HEIGHT"))
 
 
 def visualize_depth(input_dir, output_dir):
@@ -23,8 +24,11 @@ def visualize_depth(input_dir, output_dir):
         )
         normalized_data = transformed_data * (255 / DEPTH_MAX)
         inversed_data = 255 - normalized_data.astype(np.uint8)
-        #
-        result_path = output_path.joinpath(depth_file.relative_to(input_path))
         depth_image = Image.fromarray(inversed_data)
         resized_image = depth_image.resize((WIDTH, HEIGHT))
-        resized_image.save(result_path.with_suffix(".png").absolute())
+        #
+        result_path = output_path.joinpath(
+            depth_file.relative_to(input_path)
+        ).with_suffix(".png")
+        result_path.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+        resized_image.save(result_path.absolute())

@@ -11,6 +11,7 @@ pydot = "*"
 graphviz = "*"
 pydotplus = "*"
 airsim = "*"
+python-dotenv = "*"
 
 [dev-packages]
 black = "==19.10b0"
