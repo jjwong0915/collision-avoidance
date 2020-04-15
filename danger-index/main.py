@@ -1,20 +1,25 @@
 import dataloader
+import dotenv
 import model
+import os
 import trainer
 
-DATA_DIRECTORY = "/home/jjwong0915/Documents/drone/depth_prediction/data/random/"
-WIDTH, HEIGHT = 192, 160
+dotenv.load_dotenv()
+
+EPOCH = int(os.getenv("EPOCH"))
+WIDTH, HEIGHT = int(os.getenv("WIDTH")), int(os.getenv("HEIGHT"))
+DATA_DIRECTORY = os.getenv("DATA_DIR")
+CHECKPOINT_DIRECTORY = os.getenv("CHECKPOINT_DIR")
 
 
 def main():
     danger_model = model.DangerIndexModel((WIDTH, HEIGHT, 1))
-    danger_dataloader = dataloader.DangerIndexDataloader(
-        directory=DATA_DIRECTORY, size=(WIDTH, HEIGHT)
-    )
+    danger_dataloader = dataloader.DangerIndexDataloader((WIDTH, HEIGHT))
     danger_trainer = trainer.DangerIndexTrainer(
-        model=danger_model, data=danger_dataloader.load_data()
+        model=danger_model, data=danger_dataloader.load_data(DATA_DIRECTORY)
     )
-    danger_trainer.train()
+    danger_trainer.train(checkpoint_dir=CHECKPOINT_DIRECTORY, epoch=EPOCH)
 
 
-main()
+if __name__ == "__main__":
+    main()

@@ -5,21 +5,23 @@ from tensorflow.keras import preprocessing
 
 
 class DangerIndexDataloader:
-    def __init__(self, directory, size):
-        self.path = pathlib.Path(directory)
+    def __init__(self, size):
         self.size = size
 
-    def load_data(self):
+    def read_depth_image(self, path):
+        scaled_image = Image.open(path).convert("L").resize(self.size)
+        array_2d = numpy.transpose(numpy.array(scaled_image))
+        array_3d = numpy.expand_dims(array_2d, 2)
+        return array_3d
+
+    def load_data(self, directory):
         data_list = []
         label_list = []
-        for file_path in self.path.glob("**/*.png"):
-            scaled_image = Image.open(file_path).convert("L").resize(self.size)
-            array_2d = numpy.array(scaled_image)
-            array_3d = numpy.expand_dims(array_2d, 2)
-            data_list.append(array_3d)
+        for file_path in pathlib.Path(directory).glob("**/*.png"):
+            data_list.append(self.read_depth_image(file_path))
             #
-            danger_index = 1 if int(file_path.stem) > 45 else 0
-            label_list.append(data_list)
+            danger_index = int(file_path.stem) / 50
+            label_list.append(danger_index)
         #
         generator = preprocessing.image.ImageDataGenerator()
         return generator.flow(numpy.array(data_list), label_list, batch_size=5)

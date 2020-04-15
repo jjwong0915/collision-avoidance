@@ -1,12 +1,17 @@
-import os
 import airsim
-import pathlib
+import dataloader
+import dotenv
+import matplotlib.pyplot as plt
+import model
 import numpy as np
+import os
+import pathlib
 import PIL.Image as Image
 
-DEPTH_MAX = int(os.getenv("DEPTH_MAX"))
-DEPTH_MIN = int(os.getenv("DEPTH_MIN"))
-WIDTH, HEIGHT = int(os.getenv("INPUT_WIDTH")), int(os.getenv("INPUT_HEIGHT"))
+dotenv.load_dotenv()
+
+WIDTH, HEIGHT = int(os.getenv("WIDTH")), int(os.getenv("HEIGHT"))
+DEPTH_MIN, DEPTH_MAX = int(os.getenv("DEPTH_MIN")), int(os.getenv("DEPTH_MAX"))
 
 
 def visualize_depth(input_dir, output_dir):
@@ -32,3 +37,22 @@ def visualize_depth(input_dir, output_dir):
         ).with_suffix(".png")
         result_path.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
         resized_image.save(result_path.absolute())
+
+
+def predict_depth(weight_path, input_dir):
+    input_path = pathlib.Path(input_dir)
+    danger_dataloader = dataloader.DangerIndexDataloader((WIDTH, HEIGHT))
+    danger_model = model.DangerIndexModel((WIDTH, HEIGHT, 1))
+    danger_model.load_weights(weight_path)
+    #
+    predicted_index = []
+    labeled_index = []
+    for depth_image in input_path.glob("**/*.png"):
+        depth_data = danger_dataloader.read_depth_image(depth_image.absolute())
+        predicted_index.append(danger_model.predict(np.array([depth_data]))[0][0])
+        labeled_index.append(int(depth_image.stem))
+    #
+    plt.hlines(0.5, 0, 50, "r")
+    plt.plot(labeled_index, predicted_index, "bo")
+    plt.axis([0, 50, 0, 1.2])
+    plt.show()
