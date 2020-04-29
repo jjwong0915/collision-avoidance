@@ -39,20 +39,33 @@ def visualize_depth(input_dir, output_dir):
         resized_image.save(result_path.absolute())
 
 
-def predict_depth(weight_path, input_dir):
+def predict_danger(weight_path, input_dir, output_path):
     input_path = pathlib.Path(input_dir)
     danger_dataloader = dataloader.DangerIndexDataloader((WIDTH, HEIGHT))
     danger_model = model.DangerIndexModel((WIDTH, HEIGHT, 1))
     danger_model.load_weights(weight_path)
     #
-    predicted_index = []
-    labeled_index = []
+    predicted_list = []
+    labeled_list = []
     for depth_image in input_path.glob("**/*.png"):
         depth_data = danger_dataloader.read_depth_image(depth_image.absolute())
-        predicted_index.append(danger_model.predict(np.array([depth_data]))[0][0])
-        labeled_index.append(int(depth_image.stem))
+        danger_index = min(
+            max(danger_model.predict(np.array([depth_data]))[0][0], 0), 1
+        )
+        predicted_list.append(danger_index)
+        labeled_list.append(int(depth_image.stem))
+    labeled_list, predicted_list = zip(*sorted(zip(labeled_list, predicted_list)))
     #
-    plt.hlines(0.5, 0, 50, "r")
-    plt.plot(labeled_index, predicted_index, "bo")
-    plt.axis([0, 50, 0, 1.2])
-    plt.show()
+    plt.clf()
+    plt.axis([0, 50, 0, 1])
+    plt.hlines(0.5, 0, 50, "g")
+    for current_idx in range(len(predicted_list)):
+        danger_cnt = 0
+        for check_idx in range(current_idx, max(current_idx - 7, 0), -1):
+            if predicted_list[check_idx] > 0.5:
+                danger_cnt += 1
+        if danger_cnt >= 4:
+            plt.plot(labeled_list[current_idx], predicted_list[current_idx], "ro")
+        else:
+            plt.plot(labeled_list[current_idx], predicted_list[current_idx], "bo")
+    plt.savefig(output_path)
