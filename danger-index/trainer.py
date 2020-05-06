@@ -1,18 +1,24 @@
 import tensorflow
+import os.path as path
 
 
 class DangerIndexTrainer:
-    def __init__(model, data):
-        this.model = model
-        this.data = data
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
 
-    def train(epoch):
-        this.model.compile(
-            optimizer="adam",
-            loss=tensorflow.keras.losses.binary_crossentropy,
-            metrics=["accuracy"],
+    def train(self, checkpoint_dir, epoch):
+        self.model.compile(
+            optimizer="adam", loss=tensorflow.keras.losses.mean_squared_error,
         )
-        history = this.model.fit(
-            this.data, steps_per_epoch=len(this.data), epochs=epoch,
+        #
+        checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(
+            filepath=path.join(checkpoint_dir, "{epoch:02d}-{loss:.2f}.h5"),
+            save_weights_only=True,
         )
-        print(history)
+        self.model.fit(
+            self.data,
+            steps_per_epoch=len(self.data),
+            epochs=epoch,
+            callbacks=[checkpoint],
+        )
