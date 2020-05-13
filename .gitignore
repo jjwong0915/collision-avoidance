@@ -136,3 +136,6 @@ depth_prediction/test/*
 
 # keep folders
 !.gitkeep
+**/*.h5
+**/*.png
+**/*.pfm
