@@ -20,8 +20,8 @@ class DangerIndexDataloader:
         for file_path in pathlib.Path(directory).glob("**/*.png"):
             data_list.append(self.read_depth_image(file_path))
             #
-            danger_index = int(file_path.stem) / 50
-            label_list.append(danger_index)
+            labeled_index = int(file_path.stem) / 50
+            label_list.append(labeled_index)
         #
         generator = preprocessing.image.ImageDataGenerator()
         return generator.flow(numpy.array(data_list), label_list, batch_size=5)

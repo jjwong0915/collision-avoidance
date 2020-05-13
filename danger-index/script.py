@@ -44,6 +44,7 @@ def predict_danger(weight_path, input_dir, output_path):
     danger_dataloader = dataloader.DangerIndexDataloader((WIDTH, HEIGHT))
     danger_model = model.DangerIndexModel((WIDTH, HEIGHT, 1))
     danger_model.load_weights(weight_path)
+    danger_bound = float(os.getenv("DANGER_BOUND"))
     #
     predicted_list = []
     labeled_list = []
@@ -58,13 +59,13 @@ def predict_danger(weight_path, input_dir, output_path):
     #
     plt.clf()
     plt.axis([0, 50, 0, 1])
-    plt.hlines(0.5, 0, 50, "g")
+    plt.hlines(danger_bound, 0, 50, "g")
     for current_idx in range(len(predicted_list)):
         danger_cnt = 0
         for check_idx in range(current_idx, max(current_idx - 7, 0), -1):
-            if predicted_list[check_idx] > 0.5:
+            if predicted_list[check_idx] > danger_bound:
                 danger_cnt += 1
-        if danger_cnt >= 4:
+        if danger_cnt >= 2:
             plt.plot(labeled_list[current_idx], predicted_list[current_idx], "ro")
         else:
             plt.plot(labeled_list[current_idx], predicted_list[current_idx], "bo")
