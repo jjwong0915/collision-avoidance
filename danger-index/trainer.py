@@ -13,7 +13,7 @@ class DangerIndexTrainer:
         )
         #
         checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(
-            filepath=path.join(checkpoint_dir, "{epoch:02d}-{loss:.2f}.h5"),
+            filepath=path.join(checkpoint_dir, "{epoch:02d}-{loss:.4f}.h5"),
             save_weights_only=True,
         )
         self.model.fit(
