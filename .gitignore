@@ -130,12 +130,9 @@ dmypy.json
 ## Custom Ignore
 
 # training data and result
-depth_prediction/data/*
-depth_prediction/result/*
-depth_prediction/test/*
-
-# keep folders
-!.gitkeep
 **/*.h5
 **/*.png
 **/*.pfm
+
+# keep folders
+!.gitkeep
