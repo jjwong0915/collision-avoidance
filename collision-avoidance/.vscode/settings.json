@@ -1,3 +1,4 @@
 {
-  "python.formatting.provider": "black"
+  "python.formatting.provider": "black",
+  "python.pythonPath": "C:\\Users\\JJ Wong\\.virtualenvs\\collision-avoidance-kgbmKNSl\\Scripts\\python.exe"
 }
