@@ -5,7 +5,8 @@ import algorithm
 import numpy as np
 import PIL.Image as Image
 
-TARGET_POS = (25, 5, -5)
+TARGET_POS = (40, 28, -10)
+TARGET_SPEED = 2
 
 
 def main():
@@ -18,9 +19,10 @@ def main():
     client.confirmConnection()
     client.enableApiControl(True)
     client.armDisarm(True)
+    client.takeoffAsync().join()
     print("multirotor took off")
     #
-    client.moveToPositionAsync(*TARGET_POS, 1)
+    client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
     #
     try:
         while True:
@@ -43,8 +45,37 @@ def main():
             # visualized_depth = np.uint8(np.minimum(depth, 128) * 2)
             # Image.fromarray(visualized_depth, "L").show()
             #
-            result = algorithm.projection_approach(depth)
+            result = algorithm.two_step_decision(depth)
             print(result)
+            if result == algorithm.Result.UP_RIGHT:
+                client.moveByVelocityAsync(0, 1, -1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.RIGHT:
+                client.moveByVelocityAsync(0, 1, 0, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.DOWN_RIGHT:
+                client.moveByVelocityAsync(0, 1, 1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.DOWN:
+                client.moveByVelocityAsync(0, 0, 1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.DOWN_LEFT:
+                client.moveByVelocityAsync(0, -1, 1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.LEFT:
+                client.moveByVelocityAsync(0, -1, 0, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.UP_LEFT:
+                client.moveByVelocityAsync(0, -1, -1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.UP:
+                client.moveByVelocityAsync(0, 0, -1, 1).join()
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+            elif result == algorithm.Result.STOP:
+                client.moveByVelocityAsync(0, 0, 0, 1).join()
+            else:
+                client.moveToPositionAsync(*TARGET_POS, TARGET_SPEED)
+
     except:
         traceback.print_exc()
     #
