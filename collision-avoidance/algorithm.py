@@ -4,7 +4,7 @@ import numpy as np
 IMAGE_WIDTH, IMAGE_HEIGHT = 160, 192
 FLIGHT_WIDTH, FLIGHT_HEIGHT = 2, 1
 SAFE_DISTANCE = 10
-DANGER_PIXEL_RATIO = 0.0005
+DANGER_PIXEL_RATIO = 0.0075
 DANGER_WEIGHT_SUM = 5
 
 
@@ -87,7 +87,6 @@ def approach_safe(depth_image):
                         area_sum[4] += area
     #
     merged_sum = [area_sum[idx] + area_sum[(idx + 1) % 8] for idx in range(8)]
-    print(merged_sum)
     result_dir = np.argmax(merged_sum)
     if result_dir == 0:
         return Result.UP_RIGHT
@@ -144,7 +143,6 @@ def away_danger(depth_image):
                         weight_sum[4] += weight
     #
     merged_sum = [weight_sum[idx] + weight_sum[(idx + 1) % 8] for idx in range(8)]
-    print(merged_sum)
     result_dir = np.argmax(merged_sum)
     if result_dir == 0:
         return Result.DOWN_LEFT

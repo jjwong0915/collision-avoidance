@@ -9,6 +9,7 @@ tensorflow = "==2.0"
 airsim = "*"
 numpy = "*"
 pillow = "*"
+matplotlib = "*"
 
 [dev-packages]
 black = "*"
