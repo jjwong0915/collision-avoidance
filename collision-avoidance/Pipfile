@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 keras = "*"
-tensorflow = "==2.0"
+tensorflow = "==2.0.1"
 airsim = "*"
 numpy = "*"
 pillow = "*"
