@@ -1,5 +1,5 @@
-# Seminar in automatic drone collision avoidance system 
-This repository consists of four directories, each of them represents a stage of the seminar.
+# Real-time Collision Avoidance System for Drone
+This repository consists of four directories, each of them represents a stage of the project.
 
 
 ## Common information
